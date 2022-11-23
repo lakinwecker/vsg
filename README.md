@@ -1,2 +1,16 @@
 # vsg
-A C++ virtual scene graph, for OpenGL with a unidirectional data flow UI. Inspired by the virtual dom for snabbdom/react/elm/vue.
+
+This is a virtual scene graph intended for use in a unidirectional user
+interface for 3D applications.
+
+# Building and installing
+
+See the [BUILDING](BUILDING.md) document.
+
+# Contributing
+
+See the [CONTRIBUTING](CONTRIBUTING.md) document.
+
+# Licensing
+
+MIT License. See [LICENSE](LICENSE) file.

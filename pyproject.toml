@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "vsg"
+version = "0.1.0"
+description = ""
+authors = ["Lakin Wecker <lakin@wecker.ca>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+cmake-init = "^0.32.0"
+
+[tool.poetry.group.dev.dependencies]
+conan = "^1.54.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
