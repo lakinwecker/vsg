@@ -13,10 +13,18 @@ if(PROJECT_IS_TOP_LEVEL)
   enable_testing()
 endif()
 
+find_package(doctest REQUIRED)
+find_package(immer REQUIRED)
+
 # ---- Tests ----
 
 add_executable(vsg_test source/vsg_test.cpp)
-target_link_libraries(vsg_test PRIVATE vsg::vsg)
+target_link_libraries(
+    vsg_test PRIVATE
+    vsg::vsg
+    doctest::doctest
+    immer::immer
+)
 target_compile_features(vsg_test PRIVATE cxx_std_20)
 
 add_test(NAME vsg_test COMMAND vsg_test)

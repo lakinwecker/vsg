@@ -1,8 +1,5 @@
-#include "vsg/vsg.hpp"
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <doctest/doctest.h>
 
-auto main() -> int
-{
-  auto const result = name();
+#include <vsg/vsg.hpp>
 
-  return result == "vsg" ? 0 : 1;
-}

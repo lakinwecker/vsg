@@ -30,6 +30,14 @@
       }
     },
     {
+      "name": "conan",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/conan/conan_toolchain.cmake",
+        "CMAKE_POLICY_DEFAULT_CMP0091": "NEW"
+      }
+    },
+    {
       "name": "cppcheck",
       "hidden": true,
       "cacheVariables": {
