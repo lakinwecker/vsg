@@ -20,6 +20,7 @@
 #include <utility>
 
 #include <immer/algorithm.hpp>
+#include <immer/box.hpp>
 #include <immer/vector.hpp>
 
 namespace vsg {
@@ -30,7 +31,7 @@ using Vector = immer::vector<T>;
 
 // Not part of our public interface.
 template<typename T>
-using Box = std::shared_ptr<T>;
+using Box = immer::box<T>;
 
 // Temporary function used to make the compiler happy.
 // TODO: make this not usable somehow
@@ -96,11 +97,11 @@ struct Node : public NodeI<ContextT> {
     //       Can we fix that?
     Vector<Box<NodeI<ContextT>>> children;
 
-    Node(DrawArgsT args, ChangeMarkerT marker, Vector<Box<NodeI<ContextT>>> children)
+    Node(DrawArgsT args, ChangeMarkerT marker, Vector<Box<NodeI<ContextT>>> inChildren)
         : drawArgs{args}
         , gpuData{updateGPU(args)}
         , changeMarker{marker}
-        , children{std::move(children)} {}
+        , children{std::move(inChildren)} {}
 
     // Rule of 5.
     ~Node() override                           = default;
@@ -152,10 +153,10 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
     ChangeMarkerT changeMarker;
     Vector<Box<VirtualNodeI<ContextT>>> children;
 
-    VirtualNode(DrawArgsT args, ChangeMarkerT marker, Vector<Box<VirtualNodeI<ContextT>>> children)
+    VirtualNode(DrawArgsT args, ChangeMarkerT marker, Vector<Box<VirtualNodeI<ContextT>>> inChildren)
         : drawArgs{args}
         , changeMarker{marker}
-        , children{std::move(children)} {}
+        , children{std::move(inChildren)} {}
 
     // Rule of 5.
     ~VirtualNode() override                                  = default;
