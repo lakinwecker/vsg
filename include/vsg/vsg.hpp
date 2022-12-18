@@ -47,12 +47,28 @@ void draw(
   placeholder const &place_holder2
 );
 
+// This concept determines that a particule T can be drawn
+template <typename ContextT, typename ArgsT, typename GPUDataT>
+concept DrawableNode = requires(ContextT ctx, ArgsT args, GPUDataT data) {
+	{ update_gpu(args) } -> std::convertible_to<GPUDataT>;
+	{ draw(ctx, data, args) } -> std::convertible_to<void>;
+};
+
+// This concept determines that a particule T can be used to update the context
+template <typename ContextT, typename ArgsT>
+concept ContextNode = requires(ContextT ctx, ArgsT args) {
+	{ update_gpu(ctx, args) } -> std::convertible_to<ContextT>;
+};
+
+
+//--------------------------------------------------------------------------------------------------
+// The core API that nodes must implement.
 template<typename ContextT>
 struct node_i {
   node_i()                                                           = default;
-  node_i(const node_i<ContextT> &)                                   = default;
+  node_i(node_i<ContextT> const &)                                   = default;
   node_i(node_i<ContextT> &&) noexcept                               = default;
-  auto operator=(const node_i<ContextT> &) -> node_i<ContextT>     & = default;
+  auto operator=(node_i<ContextT> const &) -> node_i<ContextT>     & = default;
   auto operator=(node_i<ContextT> &&) noexcept -> node_i<ContextT> & = default;
   virtual ~node_i()                                                  = default;
 
