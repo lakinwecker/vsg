@@ -12,8 +12,16 @@ endif()
 add_custom_target(run-examples)
 
 function(add_example NAME)
+  find_package(doctest REQUIRED)
+  find_package(immer REQUIRED)
+
   add_executable("${NAME}" "${NAME}.cpp")
-  target_link_libraries("${NAME}" PRIVATE vsg::vsg)
+  target_link_libraries(
+    "${NAME}" PRIVATE
+    vsg::vsg
+    doctest::doctest
+    immer::immer
+  )
   target_compile_features("${NAME}" PRIVATE cxx_std_20)
   add_custom_target("run_${NAME}" COMMAND "${NAME}" VERBATIM)
   add_dependencies("run_${NAME}" "${NAME}")
