@@ -58,8 +58,8 @@ ColumnLimit: 100
 CommentPragmas: '^ IWYU pragma:'
 CompactNamespaces: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false # deprecated
-ConstructorInitializerIndentWidth: 2
-ContinuationIndentWidth: 2
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
 Cpp11BracedListStyle: true
 DeriveLineEnding: false
 DerivePointerAlignment: false
@@ -90,7 +90,7 @@ IndentCaseBlocks: false
 IndentGotoLabels: true
 IndentPPDirectives: AfterHash
 IndentExternBlock: NoIndent
-IndentWidth: 2
+IndentWidth: 4
 IndentWrappedFunctionNames: false
 InsertTrailingCommas: Wrapped
 JavaScriptQuotes: Double
@@ -101,7 +101,7 @@ MacroBlockEnd: ''
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: None
 ObjCBinPackProtocolList: Never
-ObjCBlockIndentWidth: 2
+ObjCBlockIndentWidth: 4
 ObjCBreakBeforeNestedBlockParam: true
 ObjCSpaceAfterProperty: false
 ObjCSpaceBeforeProtocolList: true
