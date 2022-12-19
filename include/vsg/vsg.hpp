@@ -20,18 +20,17 @@
 #include <utility>
 
 #include <immer/algorithm.hpp>
-#include <immer/box.hpp>
 #include <immer/vector.hpp>
 
 namespace vsg {
 
-// Not part of our public interface.
 template<typename T>
 using Vector = immer::vector<T>;
 
-// Not part of our public interface.
+// We can't use immer::box, because it assumes you can concretely instantiate
+// the T and this doesn't work with our type erasure
 template<typename T>
-using Box = immer::box<T>;
+using Box = std::shared_ptr<T>;
 
 // Temporary function used to make the compiler happy.
 // TODO: make this not usable somehow
@@ -72,10 +71,12 @@ struct NodeI {
     auto operator=(NodeI<ContextT> &&) noexcept -> NodeI<ContextT> & = default;
     virtual ~NodeI()                                                 = default;
 
-    virtual void draw(Box<ContextT> const &ctx) const                           = 0;
-    [[nodiscard]] virtual auto markerAsAny() const -> std::any                  = 0;
-    [[nodiscard]] virtual auto drawArgsAsAny() const -> std::any                = 0;
-    [[nodiscard]] virtual auto children() const -> Vector<Box<NodeI<ContextT>>> = 0;
+    virtual void draw(Box<ContextT> const &ctx) const                            = 0;
+    [[nodiscard]] virtual auto markerAsAny() const -> std::any                   = 0;
+    [[nodiscard]] virtual auto drawArgsAsAny() const -> std::any                 = 0;
+    [[nodiscard]] virtual auto children() const -> Vector<Box<NodeI<ContextT>>>  = 0;
+    virtual void updateDrawArgs(std::any newArgs)                                = 0;
+    virtual void updateChildren(Vector<Box<NodeI<ContextT>>> const &newChildren) = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -86,22 +87,24 @@ struct NodeI {
 // when they were created. They also hold a set of children nodes that forms the tree.
 template<typename ContextT, typename DrawArgsT, typename ChangeMarkerT>
 struct Node : public NodeI<ContextT> {
-    DrawArgsT drawArgs;
-    using GPUData = decltype(updateGPU(drawArgs));
-    GPUData gpuData;
-    ChangeMarkerT changeMarker;
+  private:
+    DrawArgsT m_drawArgs;
+    using GPUData = decltype(updateGPU(m_drawArgs));
+    GPUData m_gpuData;
+    ChangeMarkerT m_changeMarker;
 
     // TODO: This makes the children completely generic, which means ONLY the
     // Context
     //       can be passed along, none of the draw_args_t. :(
     //       Can we fix that?
-    Vector<Box<NodeI<ContextT>>> children;
+    Vector<Box<NodeI<ContextT>>> m_children;
 
+  public:
     Node(DrawArgsT args, ChangeMarkerT marker, Vector<Box<NodeI<ContextT>>> inChildren)
-        : drawArgs{args}
-        , gpuData{updateGPU(args)}
-        , changeMarker{marker}
-        , children{std::move(inChildren)} {}
+        : m_drawArgs{args}
+        , m_gpuData{updateGPU(args)}
+        , m_changeMarker{marker}
+        , m_children{std::move(inChildren)} {}
 
     // Rule of 5.
     ~Node() override                           = default;
@@ -111,17 +114,27 @@ struct Node : public NodeI<ContextT> {
     auto operator=(Node &&) noexcept -> Node & = default;
 
     // Provide the base interface elements for our types.
-    [[nodiscard]] auto markerasAny() const -> std::any override { return std::any(changeMarker); }
-    [[nodiscard]] auto drawArgsAsAny() const -> std::any override { return std::any(drawArgs); }
+    [[nodiscard]] auto markerAsAny() const -> std::any override { return std::any(m_changeMarker); }
+    [[nodiscard]] auto drawArgsAsAny() const -> std::any override { return std::any(m_drawArgs); }
+    [[nodiscard]] auto children() const -> Vector<Box<NodeI<ContextT>>> override {
+        return m_children;
+    }
 
     void draw(Box<ContextT> const &ctx) const override {
         using vsg::draw;
-        draw(ctx, gpuData, drawArgs);
-        immer::for_each(children, [&](const Box<NodeI<ContextT>> &curNode) { curNode->draw(ctx); });
+        draw(ctx, m_gpuData, m_drawArgs);
+        immer::for_each(m_children, [&](const Box<NodeI<ContextT>> &curNode) {
+            curNode->draw(ctx);
+        });
     }
+
+    void updateChildren(Vector<Box<NodeI<ContextT>>> const &newChildren) override {
+        m_children = newChildren;
+    }
+
     void updateDrawArgs(std::any newArgs) override {
-        if (newArgs.type() != typeid(drawArgs)) { return; }
-        drawArgs = std::any_cast<DrawArgsT>(newArgs);
+        if (newArgs.type() != typeid(m_drawArgs)) { return; }
+        m_drawArgs = std::any_cast<DrawArgsT>(newArgs);
     }
 };
 
@@ -149,14 +162,20 @@ struct VirtualNodeI {
 
 template<typename ContextT, typename DrawArgsT, typename ChangeMarkerT>
 struct VirtualNode : public VirtualNodeI<ContextT> {
-    DrawArgsT drawArgs;
-    ChangeMarkerT changeMarker;
-    Vector<Box<VirtualNodeI<ContextT>>> children;
+  private:
+    DrawArgsT m_drawArgs;
+    ChangeMarkerT m_changeMarker;
+    Vector<Box<VirtualNodeI<ContextT>>> m_children;
 
-    VirtualNode(DrawArgsT args, ChangeMarkerT marker, Vector<Box<VirtualNodeI<ContextT>>> inChildren)
-        : drawArgs{args}
-        , changeMarker{marker}
-        , children{std::move(inChildren)} {}
+  public:
+    VirtualNode(
+        DrawArgsT args,
+        ChangeMarkerT marker,
+        Vector<Box<VirtualNodeI<ContextT>>> inChildren
+    )
+        : m_drawArgs{args}
+        , m_changeMarker{marker}
+        , m_children{std::move(inChildren)} {}
 
     // Rule of 5.
     ~VirtualNode() override                                  = default;
@@ -166,23 +185,24 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
     auto operator=(VirtualNode &&) noexcept -> VirtualNode & = default;
 
     // Provide the base interface elements for our types.
-    [[nodiscard]] auto markerAsAny() const -> std::any override { return std::any(changeMarker); }
-
-    [[nodiscard]] auto drawArgsAsAny() const -> std::any override { return std::any(drawArgs); }
-
+    [[nodiscard]] auto markerAsAny() const -> std::any override { return std::any(m_changeMarker); }
+    [[nodiscard]] auto drawArgsAsAny() const -> std::any override { return std::any(m_drawArgs); }
+    [[nodiscard]] auto children() const -> Vector<Box<VirtualNodeI<ContextT>>> override {
+        return m_children;
+    }
     [[nodiscard]] auto changeMarkerEquals(NodeI<ContextT> const &other) const -> bool override {
-        auto otherChangeMarker = other.marker();
-        if (otherChangeMarker.type() != typeid(changeMarker)) { return false; }
-        return std::any_cast<ChangeMarkerT>(otherChangeMarker) == changeMarker;
+        auto otherChangeMarker = other.markerAsAny();
+        if (otherChangeMarker.type() != typeid(m_changeMarker)) { return false; }
+        return std::any_cast<ChangeMarkerT>(otherChangeMarker) == m_changeMarker;
     }
 
     [[nodiscard]] auto createNode() const -> Box<NodeI<ContextT>> override {
         Vector<Box<NodeI<ContextT>>> childrenNodes;
-        immer::for_each(children, [&](const Box<VirtualNodeI<ContextT>> &child) {
+        immer::for_each(m_children, [&](const Box<VirtualNodeI<ContextT>> &child) {
             childrenNodes = childrenNodes.push_back(child->createNode());
         });
         return std::make_shared<vsg::Node<ContextT, DrawArgsT, ChangeMarkerT>>(
-            drawArgs, changeMarker, childrenNodes
+            m_drawArgs, m_changeMarker, childrenNodes
         );
     }
 };
@@ -192,7 +212,7 @@ auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &
     -> Box<NodeI<ContextT>> {
     if (!graph) {
         // If the current graph is empty, create it from scratch.
-        return vGraph->node();
+        return vGraph->createNode();
     }
 
     // Else try and update things.
@@ -200,7 +220,7 @@ auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &
         // if the changeMarker did not change
         vGraph->changeMarkerEquals(*graph) &&
         // and the type of the node did not change
-        vGraph->drawArgs().type() == graph->drawArgs().type()
+        vGraph->drawArgsAsAny().type() == graph->drawArgsAsAny().type()
 
     ) {
         // This node will remain the same, but update its children
@@ -217,16 +237,16 @@ auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &
                     = newChildren.push_back(updateGraph(oldChildren[index], vChildren[index]));
             } else {
                 // Completely new child.
-                newChildren = newChildren.push_back(vChildren[index]->node());
+                newChildren = newChildren.push_back(vChildren[index]->createNode());
             }
             ++index;
         }
-        graph->updateDrawArgs(vGraph->drawArgs());
         graph->updateChildren(newChildren);
+        graph->updateDrawArgs(vGraph->drawArgsAsAny());
         return graph;
     }
     // Create the entire thing from this point onwards.
-    return vGraph->node();
+    return vGraph->createNode();
 }
 
 //--------------------------------------------------------------------------
@@ -235,14 +255,14 @@ auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &
 struct Fragment {};
 struct FragmentGPUData {};
 
-inline auto updateGPU([[maybe_unused]] Fragment frag) -> std::shared_ptr<FragmentGPUData> {
+inline auto updateGPU([[maybe_unused]] Fragment frag) -> Box<FragmentGPUData> {
     return std::make_shared<FragmentGPUData>();
 }
 
 template<typename ContextT>
 void draw(
-    [[maybe_unused]] std::shared_ptr<ContextT> const &ctx,
-    [[maybe_unused]] std::shared_ptr<FragmentGPUData> const &data,
+    [[maybe_unused]] Box<ContextT> const &ctx,
+    [[maybe_unused]] Box<FragmentGPUData> const &data,
     [[maybe_unused]] Fragment const &node
 ) {}
 
