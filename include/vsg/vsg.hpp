@@ -41,24 +41,18 @@ auto updateGPU(ArgT const & /*unused*/) -> Box<ReturnT> {
 
 struct Placeholder {};
 template<typename ContextT>
-void draw(
+auto draw(
     Box<ContextT> const &ctx,
     Placeholder const &placeHolder1,
     Placeholder const &placeHolder2
-);
+) -> Box<ContextT>;
 
 // This concept determines that a particule T can be drawn
 template<typename ContextT, typename ArgsT, typename GPUDataT>
-concept DrawableNode = requires(ContextT ctx, ArgsT args, GPUDataT data) {
+concept DrawableNode = requires(Box<ContextT> ctx, ArgsT args, GPUDataT data) {
                            { updateGPU(args) } -> std::convertible_to<GPUDataT>;
-                           { draw(ctx, data, args) } -> std::convertible_to<void>;
+                           { draw(ctx, data, args) } -> std::convertible_to<Box<ContextT>>;
                        };
-
-// This concept determines that a particule T can be used to update the context
-template<typename ContextT, typename ArgsT>
-concept ContextNode = requires(ContextT ctx, ArgsT args) {
-                          { updateGPU(ctx, args) } -> std::convertible_to<ContextT>;
-                      };
 
 //--------------------------------------------------------------------------------------------------
 // The core API that nodes must implement.
@@ -71,7 +65,7 @@ struct NodeI {
     auto operator=(NodeI<ContextT> &&) noexcept -> NodeI<ContextT> & = default;
     virtual ~NodeI()                                                 = default;
 
-    virtual void draw(Box<ContextT> const &ctx) const                            = 0;
+    virtual auto draw(Box<ContextT> const &ctx) const -> Box<ContextT>           = 0;
     [[nodiscard]] virtual auto markerAsAny() const -> std::any                   = 0;
     [[nodiscard]] virtual auto drawArgsAsAny() const -> std::any                 = 0;
     [[nodiscard]] virtual auto children() const -> Vector<Box<NodeI<ContextT>>>  = 0;
@@ -120,12 +114,13 @@ struct Node : public NodeI<ContextT> {
         return m_children;
     }
 
-    void draw(Box<ContextT> const &ctx) const override {
+    auto draw(Box<ContextT> const &ctx) const -> Box<ContextT> override {
         using vsg::draw;
-        draw(ctx, m_gpuData, m_drawArgs);
+        Box<ContextT> newCtx = draw(ctx, m_gpuData, m_drawArgs);
         immer::for_each(m_children, [&](const Box<NodeI<ContextT>> &curNode) {
-            curNode->draw(ctx);
+            curNode->draw(newCtx);
         });
+        return newCtx;
     }
 
     void updateChildren(Vector<Box<NodeI<ContextT>>> const &newChildren) override {
@@ -260,11 +255,13 @@ inline auto updateGPU([[maybe_unused]] Fragment frag) -> Box<FragmentGPUData> {
 }
 
 template<typename ContextT>
-void draw(
+auto draw(
     [[maybe_unused]] Box<ContextT> const &ctx,
     [[maybe_unused]] Box<FragmentGPUData> const &data,
     [[maybe_unused]] Fragment const &node
-) {}
+) -> Box<ContextT> {
+    return ctx;
+}
 
 //--------------------------------------------------------------------------
 // Helper functions that allow various options
