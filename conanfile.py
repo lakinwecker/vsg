@@ -18,7 +18,7 @@ class Recipe(ConanFile):
     def requirements(self):
         requirements = [
             "immer/0.8.0",
-            "doctest/2.4.9",
+            "doctest/2.4.10",
         ]
         for r in requirements:
             self.requires(r)
@@ -37,4 +37,3 @@ class Recipe(ConanFile):
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
-
