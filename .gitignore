@@ -8,3 +8,8 @@ cmake-build-*/
 prefix/
 CMakeLists.txt.user
 CMakeUserPresets.json
+conanbuildinfo.txt
+conaninfo.txt
+graph_info.json
+conan.lock
+poetry.lock

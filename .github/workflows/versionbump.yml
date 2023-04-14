@@ -1,0 +1,13 @@
+name: Version Bump
+on:
+  push:
+    branches:
+    - workflow-testing
+    paths-ignore:
+    - version.txt
+
+jobs:
+  version-bump:
+    uses: BigGeo-GIV/bg-ci/.github/workflows/versionbump.yml@main
+    secrets: inherit
+    with: { branch: main }

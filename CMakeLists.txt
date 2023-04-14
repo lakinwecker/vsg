@@ -2,9 +2,11 @@ cmake_minimum_required(VERSION 3.14)
 
 include(cmake/prelude.cmake)
 
+file(READ "version.txt" ver)
+string(STRIP ${ver} ver)
 project(
     vsg
-    VERSION 0.1.0
+    VERSION ${ver}
     DESCRIPTION "A virtual scene-graph for unidirectional data flow UIs. Inspired by the virtual dom from snabbdom/React/Elm/Vue.js"
     HOMEPAGE_URL "https://github.com/lakinwecker/vsg"
     LANGUAGES NONE

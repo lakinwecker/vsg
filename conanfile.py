@@ -3,14 +3,16 @@ from conan import ConanFile
 
 
 class Recipe(ConanFile):
+    v = open("version.txt").readline().strip()
     name = "vsg"
-    version = "0.1.0"
+    version = v
 
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeToolchain", "CMakeDeps", "VirtualRunEnv"
 
     # Sources are located in the same place as this recipe, copy them to the recipe
-    exports_sources = "CMakeLists.txt", "CMakePresets.json", "cmake/*", "include/*", "source/*"
+    exports = "version.txt"
+    exports_sources = "version.txt", "CMakeLists.txt", "CMakePresets.json", "cmake/*", "include/*", "source/*"
 
     def layout(self):
         self.folders.generators = "conan"
