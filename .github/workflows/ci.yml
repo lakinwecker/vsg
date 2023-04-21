@@ -21,9 +21,3 @@ jobs:
       JF_CONAN_URL: ${{ secrets.JF_CONAN_URL }}
     with:
       conan_create: true
-
-  foo:
-    runs-on: ubuntu-22.04
-
-    steps:
-      - run: echo ${{ secrets.JF_CONAN_URL }} >> foo.txt & cat foo.txt
