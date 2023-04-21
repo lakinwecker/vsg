@@ -9,5 +9,6 @@ on:
 jobs:
   version-bump:
     uses: BigGeo-GIV/bg-ci/.github/workflows/versionbump.yml@main
-    secrets: inherit
+    secrets:
+      GH_ACCESS: ${{ secrets.GH_ACCESS }}
     with: { branch: main }
