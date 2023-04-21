@@ -13,3 +13,4 @@ conaninfo.txt
 graph_info.json
 conan.lock
 poetry.lock
+compile_commands.json
