@@ -2,7 +2,7 @@ name: Version Bump
 on:
   push:
     branches:
-    - workflow-testing
+    - main
     paths-ignore:
     - version.txt
 

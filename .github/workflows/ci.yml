@@ -2,7 +2,7 @@ name: Continuous Integration
 on:
   push:
     branches:
-    - workflow-testing
+    - main
     paths:
     - version.txt
 
@@ -16,4 +16,5 @@ jobs:
   ci:
     uses: BigGeo-GIV/bg-ci/.github/workflows/ci.yml@main
     secrets: inherit
-    with: { conan_create: true }
+    with:
+      conan_create: true
