@@ -10,13 +10,15 @@ project(
     LANGUAGES NONE
 )
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 include(cmake/project-is-top-level.cmake)
 include(cmake/variables.cmake)
-include(cmake/dependencies.cmake)
-include(cmake/targets.cmake)
+include(vsg_dependencies)
+include(vsg_targets)
 
 # ---- Dependencies ----
-# we have none
+vsg_find_dependencies_thirdparty()
 
 # ---- Declare library ----
 vsg_declare_library()

@@ -5,6 +5,7 @@ project(vsgTests LANGUAGES CXX)
 include(../cmake/project-is-top-level.cmake)
 include(../cmake/folders.cmake)
 include(../cmake/windows-set-path.cmake)
+include(vsg_dependencies)
 
 # ---- Dependencies ----
 
@@ -13,8 +14,8 @@ if(PROJECT_IS_TOP_LEVEL)
   enable_testing()
 endif()
 
-find_package(doctest REQUIRED)
-find_package(immer REQUIRED)
+vsg_find_dependencies_thirdparty()
+vsg_dependency_targets()
 
 # ---- Tests ----
 
@@ -22,8 +23,7 @@ add_executable(vsg_test source/vsg_test.cpp)
 target_link_libraries(
     vsg_test PRIVATE
     vsg::vsg
-    doctest::doctest
-    immer::immer
+    ${VSG_DEPENDENCY_TARGETS}
 )
 target_compile_features(vsg_test PRIVATE cxx_std_20)
 
