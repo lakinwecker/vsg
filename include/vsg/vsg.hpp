@@ -50,9 +50,9 @@ auto draw(
 // This concept determines that a particule T can be drawn
 template<typename ContextT, typename ArgsT, typename GPUDataT>
 concept DrawableNode = requires(Box<ContextT> ctx, ArgsT args, GPUDataT data) {
-                           { updateGPU(args) } -> std::convertible_to<GPUDataT>;
-                           { draw(ctx, data, args) } -> std::convertible_to<Box<ContextT>>;
-                       };
+    { updateGPU(args) } -> std::convertible_to<GPUDataT>;
+    { draw(ctx, data, args) } -> std::convertible_to<Box<ContextT>>;
+};
 
 //--------------------------------------------------------------------------------------------------
 // The core API that nodes must implement.
