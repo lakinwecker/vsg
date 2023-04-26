@@ -18,9 +18,11 @@ include(cmake/project-is-top-level.cmake)
 include(cmake/variables.cmake)
 include(vsg_dependencies)
 include(vsg_targets)
+include(givde_windows)
 
 # ---- Dependencies ----
 vsg_find_dependencies_thirdparty()
+givde_attempt_at_sanity_with_windows()
 
 # ---- Declare library ----
 vsg_declare_library()
