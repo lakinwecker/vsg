@@ -311,6 +311,46 @@ auto empty() -> Box<VirtualNodeI<ContextT>> {
     return n<ContextT, Fragment, NoChangeMarker>(Fragment{}, NoChangeMarker{}, {});
 }
 
+template<class ContextT>
+class Helper {
+  public:
+    template<typename DrawArgsT, typename ChangeMarkerT>
+    auto n(DrawArgsT val, ChangeMarkerT marker, Vector<Box<VirtualNodeI<ContextT>>> children)
+        -> Box<VirtualNodeI<ContextT>> {
+        return vsg::n(val, marker, children);
+    }
+
+    template<typename DrawArgsT>
+    auto n(DrawArgsT val, Vector<Box<VirtualNodeI<ContextT>>> children)
+        -> Box<VirtualNodeI<ContextT>> {
+        return vsg::n<ContextT>(val, NoChangeMarker{}, children);
+    }
+
+    template<typename DrawArgsT, typename ChangeMarkerT>
+    auto n(DrawArgsT val, ChangeMarkerT marker) -> Box<VirtualNodeI<ContextT>> {
+        return vsg::n<ContextT>(val, marker, {});
+    }
+
+    template<typename DrawArgsT>
+    auto n(DrawArgsT val) -> Box<VirtualNodeI<ContextT>> {
+        return vsg::n<ContextT>(val, NoChangeMarker{}, {});
+    }
+
+    template<typename ChangeMarkerT>
+    auto f(ChangeMarkerT marker, Vector<Box<VirtualNodeI<ContextT>>> children)
+        -> Box<VirtualNodeI<ContextT>> {
+        return vsg::n<ContextT>(Fragment{}, marker, children);
+    }
+
+    auto f(Vector<Box<VirtualNodeI<ContextT>>> children) -> Box<VirtualNodeI<ContextT>> {
+        return vsg::n<ContextT>(Fragment{}, NoChangeMarker{}, std::move(children));
+    }
+
+    auto empty() -> Box<VirtualNodeI<ContextT>> {
+        return vsg::n<ContextT, Fragment, NoChangeMarker>(Fragment{}, NoChangeMarker{}, {});
+    }
+};
+
 // A helper to define values that aren't used until needed.
 template<typename T>
 class LazyVal {
