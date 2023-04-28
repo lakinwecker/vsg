@@ -1,9 +1,11 @@
 from conan.tools.cmake import CMake
 from conan import ConanFile
 
+import json
 
 class Recipe(ConanFile):
     v = open("version.txt").readline().strip()
+
     name = "vsg"
     version = v
 
@@ -18,12 +20,11 @@ class Recipe(ConanFile):
         self.folders.generators = "conan"
 
     def requirements(self):
-        requirements = [
-            "immer/0.8.0",
-            "doctest/2.4.10",
-        ]
-        for r in requirements:
-            self.requires(r)
+        f = open('dependencies.json')
+        deps = json.load(f)
+
+        for n, v in deps.items():
+            self.requires(n + "/" + v["current"])
 
     def build_requirements(self):
         pass
