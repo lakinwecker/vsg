@@ -1,7 +1,7 @@
 {
     "doctest": {
         "range": "2.x",
-        "current": "2.4.10"
+        "current": "2.4.11"
     },
     "immer": {
         "range": "0.x",
