@@ -57,10 +57,10 @@ concept DrawableNode = requires(Box<ContextT> ctx, ArgsT args, GPUDataT data) {
 };
 
 // A sentinel value that means we'll use equality of the draw args to detect change.
-struct NoChangeMarker {};
+struct NoChangeMarkerProvided {};
 inline auto operator==(
-    [[maybe_unused]] NoChangeMarker const &lhs,
-    [[maybe_unused]] NoChangeMarker const &rhs
+    [[maybe_unused]] NoChangeMarkerProvided const &lhs,
+    [[maybe_unused]] NoChangeMarkerProvided const &rhs
 ) -> bool {
     return false;
 }
@@ -162,7 +162,7 @@ struct VirtualNodeI {
     [[nodiscard]] virtual auto markerAsAny() const -> std::any                                = 0;
     [[nodiscard]] virtual auto drawArgsAsAny() const -> std::any                              = 0;
     [[nodiscard]] virtual auto children() const -> Vector<Box<VirtualNodeI<ContextT>>>        = 0;
-    [[nodiscard]] virtual auto hasChangeMarker() const -> bool                                = 0;
+    [[nodiscard]] virtual auto hasProvidedChangeMarker() const -> bool                        = 0;
     [[nodiscard]] virtual auto changeMarkerEquals(NodeI<ContextT> const &other) const -> bool = 0;
     [[nodiscard]] virtual auto drawArgsEquals(NodeI<ContextT> const &other) const -> bool     = 0;
     [[nodiscard]] virtual auto createNode() const -> Box<NodeI<ContextT>>                     = 0;
@@ -198,8 +198,8 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
     [[nodiscard]] auto children() const -> Vector<Box<VirtualNodeI<ContextT>>> override {
         return m_children;
     }
-    [[nodiscard]] virtual auto hasChangeMarker() const -> bool {
-        return typeid(m_changeMarker) != typeid(NoChangeMarker);
+    [[nodiscard]] auto hasProvidedChangeMarker() const -> bool override {
+        return typeid(m_changeMarker) != typeid(NoChangeMarkerProvided);
     }
     [[nodiscard]] auto changeMarkerEquals(NodeI<ContextT> const &other) const -> bool override {
         auto otherChangeMarker = other.markerAsAny();
@@ -207,7 +207,7 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
         return std::any_cast<ChangeMarkerT>(otherChangeMarker) == m_changeMarker;
     }
 
-    [[nodiscard]] virtual auto drawArgsEquals(NodeI<ContextT> const &other) const -> bool {
+    [[nodiscard]] auto drawArgsEquals(NodeI<ContextT> const &other) const -> bool override {
         auto otherDrawArgs = other.drawArgsAsAny();
         if (otherDrawArgs.type() != typeid(m_drawArgs)) { return false; }
         static_assert(
@@ -236,8 +236,8 @@ auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &
     if (!graph) { return vGraph->createNode(); }
 
     // Else see if the current node needs to update its GPUData.
-    bool needsUpdate = vGraph->hasChangeMarker() ? vGraph->changeMarkerEquals(*graph)
-                                                 : vGraph->drawArgsEquals(graph);
+    bool needsUpdate = vGraph->hasProvidedChangeMarker() ? vGraph->changeMarkerEquals(*graph)
+                                                         : vGraph->drawArgsEquals(graph);
     if (needsUpdate) { graph->updateDrawArgs(vGraph->drawArgsAsAny()); }
 
     // Regardless of the new/old state of this node, merge the children of the nodes.
@@ -298,7 +298,7 @@ auto n(DrawArgsT val, ChangeMarkerT marker, Vector<Box<VirtualNodeI<ContextT>>> 
 // Specialization to allow for use without a marker.
 template<typename ContextT, typename DrawArgsT>
 auto n(DrawArgsT val, Vector<Box<VirtualNodeI<ContextT>>> children) -> Box<VirtualNodeI<ContextT>> {
-    return n<ContextT>(val, NoChangeMarker{}, children);
+    return n<ContextT>(val, NoChangeMarkerProvided{}, children);
 }
 
 template<typename ContextT, typename DrawArgsT, typename ChangeMarkerT>
@@ -308,7 +308,7 @@ auto n(DrawArgsT val, ChangeMarkerT marker) -> Box<VirtualNodeI<ContextT>> {
 
 template<typename ContextT, typename DrawArgsT>
 auto n(DrawArgsT val) -> Box<VirtualNodeI<ContextT>> {
-    return n<ContextT>(val, NoChangeMarker{}, {});
+    return n<ContextT>(val, NoChangeMarkerProvided{}, {});
 }
 
 template<typename ContextT, typename ChangeMarkerT>
@@ -319,12 +319,12 @@ auto f(ChangeMarkerT marker, Vector<Box<VirtualNodeI<ContextT>>> children)
 
 template<typename ContextT>
 auto f(Vector<Box<VirtualNodeI<ContextT>>> children) -> Box<VirtualNodeI<ContextT>> {
-    return n<ContextT>(Fragment{}, NoChangeMarker{}, std::move(children));
+    return n<ContextT>(Fragment{}, NoChangeMarkerProvided{}, std::move(children));
 }
 
 template<typename ContextT>
 auto empty() -> Box<VirtualNodeI<ContextT>> {
-    return n<ContextT, Fragment, NoChangeMarker>(Fragment{}, NoChangeMarker{}, {});
+    return n<ContextT, Fragment, NoChangeMarkerProvided>(Fragment{}, NoChangeMarkerProvided{}, {});
 }
 
 template<class ContextT>
