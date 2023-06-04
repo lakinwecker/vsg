@@ -15,6 +15,7 @@
 // TODO: Ensure that we can also have 2D (orthographic views)
 //------------------------------------------------------------------------------
 #include <any>
+#include <concepts>
 #include <memory>
 #include <type_traits>
 #include <typeinfo>
@@ -48,12 +49,21 @@ auto draw(
     Placeholder const &placeHolder2
 ) -> Box<ContextT>;
 
-// This concept determines that a particule T can be drawn
+// This concept determines that a particular T can be drawn
 template<typename ContextT, typename ArgsT, typename GPUDataT>
 concept DrawableNode = requires(Box<ContextT> ctx, ArgsT args, GPUDataT data) {
     { updateGPU(args) } -> std::convertible_to<GPUDataT>;
     { draw(ctx, data, args) } -> std::convertible_to<Box<ContextT>>;
 };
+
+// A sentinel value that means we'll use equality of the draw args to detect change.
+struct NoChangeMarker {};
+inline auto operator==(
+    [[maybe_unused]] NoChangeMarker const &lhs,
+    [[maybe_unused]] NoChangeMarker const &rhs
+) -> bool {
+    return false;
+}
 
 //--------------------------------------------------------------------------------------------------
 // The core API that nodes must implement.
@@ -69,7 +79,6 @@ struct NodeI {
     virtual auto draw(Box<ContextT> const &ctx) const -> Box<ContextT>           = 0;
     [[nodiscard]] virtual auto markerAsAny() const -> std::any                   = 0;
     [[nodiscard]] virtual auto drawArgsAsAny() const -> std::any                 = 0;
-    [[nodiscard]] virtual auto typeInfo() const -> std::type_info const        & = 0;
     [[nodiscard]] virtual auto children() const -> Vector<Box<NodeI<ContextT>>>  = 0;
     virtual void updateDrawArgs(std::any newArgs)                                = 0;
     virtual void updateChildren(Vector<Box<NodeI<ContextT>>> const &newChildren) = 0;
@@ -112,9 +121,6 @@ struct Node : public NodeI<ContextT> {
     // Provide the base interface elements for our types.
     [[nodiscard]] auto markerAsAny() const -> std::any override { return std::any(m_changeMarker); }
     [[nodiscard]] auto drawArgsAsAny() const -> std::any override { return std::any(m_drawArgs); }
-    [[nodiscard]] virtual auto typeInfo() const -> std::type_info const & {
-        return typeid(DrawArgsT);
-    }
     [[nodiscard]] auto children() const -> Vector<Box<NodeI<ContextT>>> override {
         return m_children;
     }
@@ -135,9 +141,9 @@ struct Node : public NodeI<ContextT> {
     void updateDrawArgs(std::any newArgs) override {
         if (newArgs.type() != typeid(m_drawArgs)) { return; }
         m_drawArgs = std::any_cast<DrawArgsT>(newArgs);
+        m_gpuData  = updateGPU(m_drawArgs);
     }
 };
-
 //------------------------------------------------------------------------------
 // Virtual nodes represent a potential graph element.
 //
@@ -155,9 +161,10 @@ struct VirtualNodeI {
 
     [[nodiscard]] virtual auto markerAsAny() const -> std::any                                = 0;
     [[nodiscard]] virtual auto drawArgsAsAny() const -> std::any                              = 0;
-    [[nodiscard]] virtual auto typeInfo() const -> std::type_info const                     & = 0;
     [[nodiscard]] virtual auto children() const -> Vector<Box<VirtualNodeI<ContextT>>>        = 0;
+    [[nodiscard]] virtual auto hasChangeMarker() const -> bool                                = 0;
     [[nodiscard]] virtual auto changeMarkerEquals(NodeI<ContextT> const &other) const -> bool = 0;
+    [[nodiscard]] virtual auto drawArgsEquals(NodeI<ContextT> const &other) const -> bool     = 0;
     [[nodiscard]] virtual auto createNode() const -> Box<NodeI<ContextT>>                     = 0;
 };
 
@@ -188,16 +195,27 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
     // Provide the base interface elements for our types.
     [[nodiscard]] auto markerAsAny() const -> std::any override { return std::any(m_changeMarker); }
     [[nodiscard]] auto drawArgsAsAny() const -> std::any override { return std::any(m_drawArgs); }
-    [[nodiscard]] virtual auto typeInfo() const -> std::type_info const & {
-        return typeid(DrawArgsT);
-    }
     [[nodiscard]] auto children() const -> Vector<Box<VirtualNodeI<ContextT>>> override {
         return m_children;
+    }
+    [[nodiscard]] virtual auto hasChangeMarker() const -> bool {
+        return typeid(m_changeMarker) != typeid(NoChangeMarker);
     }
     [[nodiscard]] auto changeMarkerEquals(NodeI<ContextT> const &other) const -> bool override {
         auto otherChangeMarker = other.markerAsAny();
         if (otherChangeMarker.type() != typeid(m_changeMarker)) { return false; }
         return std::any_cast<ChangeMarkerT>(otherChangeMarker) == m_changeMarker;
+    }
+
+    [[nodiscard]] virtual auto drawArgsEquals(NodeI<ContextT> const &other) const -> bool {
+        auto otherDrawArgs = other.drawArgsAsAny();
+        if (otherDrawArgs.type() != typeid(m_drawArgs)) { return false; }
+        static_assert(
+            std::equality_comparable<DrawArgsT>,
+            "The Draw Args you provided cannot be comparable with the == operator, or you must "
+            "provide a change marker."
+        );
+        return std::any_cast<DrawArgsT>(otherDrawArgs) == m_drawArgs;
     }
 
     [[nodiscard]] auto createNode() const -> Box<NodeI<ContextT>> override {
@@ -214,43 +232,40 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
 template<typename ContextT>
 auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &vGraph)
     -> Box<NodeI<ContextT>> {
-    if (!graph) {
-        // If the current graph is empty, create it from scratch.
-        return vGraph->createNode();
+    // If the current graph is empty, create it from scratch.
+    if (!graph) { return vGraph->createNode(); }
+
+    // Else see if the current node needs to update its GPUData.
+    bool needsUpdate = vGraph->hasChangeMarker() ? vGraph->changeMarkerEquals(*graph)
+                                                 : vGraph->drawArgsEquals(graph);
+    if (needsUpdate) { graph->updateDrawArgs(vGraph->drawArgsAsAny()); }
+
+    // Regardless of the new/old state of this node, merge the children of the nodes.
+    std::size_t index = 0;
+
+    auto oldChildren = graph->children();
+    auto vChildren   = vGraph->children();
+    immer::vector<Box<NodeI<ContextT>>> newChildren;
+
+    // First merge any possibly "same" children nodes together.
+    while (index < vChildren.size() && index < oldChildren.size()) {
+        // NOTE: Because we recurse into updateGraph again here, the child nodes GPU data
+        //       may be updated
+        newChildren = newChildren.push_back(updateGraph(oldChildren[index], vChildren[index]));
+        ++index;
     }
 
-    // Else try and update things.
-    if (
-        // if the changeMarker did not change
-        vGraph->changeMarkerEquals(*graph) &&
-        // and the type of the node did not change
-        vGraph->typeInfo() == graph->typeInfo()
-    ) {
-        // This node will remain the same, but update its children
-        std::size_t index = 0;
-
-        auto oldChildren = graph->children();
-        auto vChildren   = vGraph->children();
-        immer::vector<Box<NodeI<ContextT>>> newChildren;
-
-        while (index < vChildren.size()) {
-            if (index < oldChildren.size()) {
-                // Patch the children together
-                newChildren
-                    = newChildren.push_back(updateGraph(oldChildren[index], vChildren[index]));
-            } else {
-                // Completely new child.
-                newChildren = newChildren.push_back(vChildren[index]->createNode());
-            }
-            ++index;
-        }
-        graph->updateChildren(newChildren);
-
-        graph->updateDrawArgs(vGraph->drawArgsAsAny());
-        return graph;
+    // Then create all new ones.
+    while (index < vChildren.size()) {
+        // Completely new child.
+        newChildren = newChildren.push_back(vChildren[index]->createNode());
+        ++index;
     }
-    // Create the entire thing from this point onwards.
-    return vGraph->createNode();
+
+    // Store the new children.
+    graph->updateChildren(newChildren);
+
+    return graph;
 }
 
 //--------------------------------------------------------------------------
@@ -281,14 +296,6 @@ auto n(DrawArgsT val, ChangeMarkerT marker, Vector<Box<VirtualNodeI<ContextT>>> 
 }
 
 // Specialization to allow for use without a marker.
-struct NoChangeMarker {};
-inline auto operator==(
-    [[maybe_unused]] NoChangeMarker const &lhs,
-    [[maybe_unused]] NoChangeMarker const &rhs
-) -> bool {
-    return false;
-}
-
 template<typename ContextT, typename DrawArgsT>
 auto n(DrawArgsT val, Vector<Box<VirtualNodeI<ContextT>>> children) -> Box<VirtualNodeI<ContextT>> {
     return n<ContextT>(val, NoChangeMarker{}, children);
