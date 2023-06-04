@@ -286,7 +286,7 @@ inline auto operator==(
     [[maybe_unused]] NoChangeMarker const &lhs,
     [[maybe_unused]] NoChangeMarker const &rhs
 ) -> bool {
-    return true;
+    return false;
 }
 
 template<typename ContextT, typename DrawArgsT>
