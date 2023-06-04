@@ -237,7 +237,7 @@ auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &
 
     // Else see if the current node needs to update its GPUData.
     bool needsUpdate = vGraph->hasProvidedChangeMarker() ? vGraph->changeMarkerEquals(*graph)
-                                                         : vGraph->drawArgsEquals(graph);
+                                                         : vGraph->drawArgsEquals(*graph);
     if (needsUpdate) { graph->updateDrawArgs(vGraph->drawArgsAsAny()); }
 
     // Regardless of the new/old state of this node, merge the children of the nodes.
@@ -272,6 +272,10 @@ auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &
 // In HTML we'd have loads of nodes to use as "containers" here, we don't
 // So we'll make a simple one.
 struct Fragment {};
+inline auto operator==([[maybe_unused]] Fragment const &lhs, [[maybe_unused]] Fragment const &rhs)
+    -> bool {
+    return false;
+}
 struct FragmentGPUData {};
 
 inline auto updateGPU([[maybe_unused]] Fragment frag) -> Box<FragmentGPUData> {
