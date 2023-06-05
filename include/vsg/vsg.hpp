@@ -236,8 +236,8 @@ auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &
     if (!graph) { return vGraph->createNode(); }
 
     // Else see if the current node needs to update its GPUData.
-    bool needsUpdate = vGraph->hasProvidedChangeMarker() ? vGraph->changeMarkerEquals(*graph)
-                                                         : vGraph->drawArgsEquals(*graph);
+    bool needsUpdate = vGraph->hasProvidedChangeMarker() ? !vGraph->changeMarkerEquals(*graph)
+                                                         : !vGraph->drawArgsEquals(*graph);
     if (needsUpdate) { graph->updateDrawArgs(vGraph->drawArgsAsAny()); }
 
     // Regardless of the new/old state of this node, merge the children of the nodes.
