@@ -217,17 +217,17 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
 
     [[nodiscard]] auto drawArgsEquals(NodeI<ContextT> const &other) const -> bool override {
         if constexpr (std::same_as<NoChangeMarkerProvided, ChangeMarkerT> && !std::equality_comparable<DrawArgsT>) {
-            return false;
-        } else {
             static_assert(
                 std::equality_comparable<DrawArgsT>,
-                "The Draw Args you provided cannot be comparable with the == operator, or you must "
+                "The Draw Args you provided must be comparable with the == operator or you must "
                 "provide a change marker."
             );
+        } else if constexpr (!std::same_as<NoChangeMarkerProvided, ChangeMarkerT> && !std::equality_comparable<DrawArgsT>) {
+            return false;
+        } else {
             // TODO: could save a copy here by using the any only AFTER the types are the same
             auto otherDrawArgs = other.drawArgsAsAny();
             if (otherDrawArgs.type() != typeid(m_drawArgs)) { return false; }
-            // TODO: ensure this compile error only happens if you don't provide a change marker
             return std::any_cast<DrawArgsT>(otherDrawArgs) == m_drawArgs;
         }
     }
