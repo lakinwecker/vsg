@@ -306,6 +306,48 @@ auto draw(
 }
 
 //--------------------------------------------------------------------------
+// A simple wrapper around another set of draw args that prevents the draw
+// call for this draw args if it's invisible without removing it from the
+// graph, which means showing it again will be faster.
+template<class DrawArgsT>
+struct Visibility {
+    bool visible = true;
+    DrawArgsT drawArgs;
+};
+
+template<class DrawArgsT>
+auto operator==(Visibility<DrawArgsT> const &lhs, Visibility<DrawArgsT> const &rhs) -> bool {
+    return lhs.drawArgs == rhs.drawArgs;
+}
+template<class GPUDataT>
+struct VisibilityGPUData {
+    GPUDataT data;
+};
+
+template<class DrawArgsT>
+inline auto updateGPU(Visibility<DrawArgsT> const &frag)
+    -> Box<VisibilityGPUData<decltype(updateGPU(frag.drawArgs))>> {
+    return std::make_shared<VisibilityGPUData<decltype(updateGPU(frag.drawArgs))>>(
+        updateGPU(frag.drawArgs)
+    );
+}
+
+template<class ContextT, class DrawArgsT, class GPUDataT>
+auto draw(
+    [[maybe_unused]] Box<ContextT> const &ctx,
+    [[maybe_unused]] Box<VisibilityGPUData<GPUDataT>> const &data,
+    [[maybe_unused]] Visibility<DrawArgsT> const &node
+) -> Box<ContextT> {
+    if (node.visible) { return draw(ctx, data->data, node.drawArgs); }
+    return ctx;
+}
+
+template<class DrawArgsT>
+auto visible(DrawArgsT const &t, bool visible = true) -> Visibility<DrawArgsT> {
+    return Visibility<DrawArgsT>{.visible = visible, .drawArgs = t};
+}
+
+//--------------------------------------------------------------------------
 // Helper functions that allow various options
 template<typename ContextT, typename DrawArgsT, typename ChangeMarkerT>
 auto n(DrawArgsT val, ChangeMarkerT marker, Vector<Box<VirtualNodeI<ContextT>>> children)
