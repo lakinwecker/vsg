@@ -405,7 +405,7 @@ class Helper {
     template<typename DrawArgsT>
     auto n(DrawArgsT val, Vector<Box<VirtualNodeI<ContextT>>> children)
         -> Box<VirtualNodeI<ContextT>> {
-        return vsg::n<ContextT>(val, NoChangeMarker{}, children);
+        return vsg::n<ContextT>(val, NoChangeMarkerProvided{}, children);
     }
 
     template<typename DrawArgsT, typename ChangeMarkerT>
@@ -415,7 +415,7 @@ class Helper {
 
     template<typename DrawArgsT>
     auto n(DrawArgsT val) -> Box<VirtualNodeI<ContextT>> {
-        return vsg::n<ContextT>(val, NoChangeMarker{}, {});
+        return vsg::n<ContextT>(val, NoChangeMarkerProvided{}, {});
     }
 
     template<typename ChangeMarkerT>
@@ -425,11 +425,13 @@ class Helper {
     }
 
     auto f(Vector<Box<VirtualNodeI<ContextT>>> children) -> Box<VirtualNodeI<ContextT>> {
-        return vsg::n<ContextT>(Fragment{}, NoChangeMarker{}, std::move(children));
+        return vsg::n<ContextT>(Fragment{}, NoChangeMarkerProvided{}, std::move(children));
     }
 
     auto empty() -> Box<VirtualNodeI<ContextT>> {
-        return vsg::n<ContextT, Fragment, NoChangeMarker>(Fragment{}, NoChangeMarker{}, {});
+        return vsg::n<ContextT, Fragment, NoChangeMarkerProvided>(
+            Fragment{}, NoChangeMarkerProvided{}, {}
+        );
     }
 };
 
