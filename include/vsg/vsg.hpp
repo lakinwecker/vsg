@@ -79,6 +79,7 @@ struct NodeI {
     virtual auto draw(Box<ContextT> const &ctx) const -> Box<ContextT>           = 0;
     [[nodiscard]] virtual auto markerAsAny() const -> std::any                   = 0;
     [[nodiscard]] virtual auto drawArgsAsAny() const -> std::any                 = 0;
+    [[nodiscard]] virtual auto drawArgsType() const -> std::type_info const    & = 0;
     [[nodiscard]] virtual auto children() const -> Vector<Box<NodeI<ContextT>>>  = 0;
     virtual void updateDrawArgs(std::any newArgs)                                = 0;
     virtual void updateChildren(Vector<Box<NodeI<ContextT>>> const &newChildren) = 0;
@@ -121,6 +122,9 @@ struct Node : public NodeI<ContextT> {
     // Provide the base interface elements for our types.
     [[nodiscard]] auto markerAsAny() const -> std::any override { return std::any(m_changeMarker); }
     [[nodiscard]] auto drawArgsAsAny() const -> std::any override { return std::any(m_drawArgs); }
+    [[nodiscard]] auto drawArgsType() const -> std::type_info const & override {
+        return typeid(DrawArgsT);
+    }
     [[nodiscard]] auto children() const -> Vector<Box<NodeI<ContextT>>> override {
         return m_children;
     }
@@ -165,6 +169,7 @@ struct VirtualNodeI {
     [[nodiscard]] virtual auto hasProvidedChangeMarker() const -> bool                        = 0;
     [[nodiscard]] virtual auto changeMarkerEquals(NodeI<ContextT> const &other) const -> bool = 0;
     [[nodiscard]] virtual auto drawArgsEquals(NodeI<ContextT> const &other) const -> bool     = 0;
+    [[nodiscard]] virtual auto drawArgsType() const -> std::type_info const                 & = 0;
     [[nodiscard]] virtual auto createNode() const -> Box<NodeI<ContextT>>                     = 0;
 };
 
@@ -195,6 +200,9 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
     // Provide the base interface elements for our types.
     [[nodiscard]] auto markerAsAny() const -> std::any override { return std::any(m_changeMarker); }
     [[nodiscard]] auto drawArgsAsAny() const -> std::any override { return std::any(m_drawArgs); }
+    [[nodiscard]] auto drawArgsType() const -> std::type_info const & override {
+        return typeid(DrawArgsT);
+    }
     [[nodiscard]] auto children() const -> Vector<Box<VirtualNodeI<ContextT>>> override {
         return m_children;
     }
@@ -238,7 +246,13 @@ auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &
     // Else see if the current node needs to update its GPUData.
     bool needsUpdate = vGraph->hasProvidedChangeMarker() ? !vGraph->changeMarkerEquals(*graph)
                                                          : !vGraph->drawArgsEquals(*graph);
-    if (needsUpdate) { graph->updateDrawArgs(vGraph->drawArgsAsAny()); }
+    if (needsUpdate) {
+        // If we need to update AND our type changed, just recreate this entire node
+        if (graph->drawArgsType() != vGraph->drawArgsType()) { return vGraph->createNode(); }
+
+        // Otherwise update in place
+        graph->updateDrawArgs(vGraph->drawArgsAsAny());
+    }
 
     // Regardless of the new/old state of this node, merge the children of the nodes.
     std::size_t index = 0;
