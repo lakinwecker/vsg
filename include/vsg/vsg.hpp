@@ -224,6 +224,7 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
                 "provide a change marker."
             );
         } else if constexpr (!std::same_as<NoChangeMarkerProvided, ChangeMarkerT> && !std::equality_comparable<DrawArgsT>) {
+            // TODO: Consider adding a way for this to warn people that this is happening.
             return false;
         } else {
             // TODO: could save a copy here by using the any only AFTER the types are the same
