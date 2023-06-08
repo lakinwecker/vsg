@@ -328,6 +328,8 @@ auto operator==(Visibility<DrawArgsT> const &lhs, Visibility<DrawArgsT> const &r
 }
 template<class GPUDataT>
 struct VisibilityGPUData {
+    VisibilityGPUData(GPUDataT inData)
+        : data{std::move(inData)} {}
     GPUDataT data;
 };
 
