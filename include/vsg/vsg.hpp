@@ -83,6 +83,7 @@ struct NodeI {
     [[nodiscard]] virtual auto drawArgsType() const -> std::type_info const    & = 0;
     [[nodiscard]] virtual auto children() const -> Vector<Box<NodeI<ContextT>>>  = 0;
     virtual void updateDrawArgs(std::any newArgs)                                = 0;
+    virtual void updateChangeMarker(std::any newArgs)                            = 0;
     virtual void updateChildren(Vector<Box<NodeI<ContextT>>> const &newChildren) = 0;
 };
 
@@ -147,6 +148,11 @@ struct Node : public NodeI<ContextT> {
         if (newArgs.type() != typeid(m_drawArgs)) { return; }
         m_drawArgs = std::any_cast<DrawArgsT>(newArgs);
         m_gpuData  = updateGPU(m_drawArgs);
+    }
+
+    void updateChangeMarker(std::any newArgs) override {
+        if (newArgs.type() != typeid(m_changeMarker)) { return; }
+        m_changeMarker = std::any_cast<ChangeMarkerT>(newArgs);
     }
 };
 //------------------------------------------------------------------------------
@@ -260,6 +266,7 @@ auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &
 
         // Otherwise update in place
         graph->updateDrawArgs(vGraph->drawArgsAsAny());
+        if (vGraph->hasProvidedChangeMarker()) { graph->updateChangeMarker(vGraph->markerAsAny()); }
     }
 
     // Regardless of the new/old state of this node, merge the children of the nodes.
