@@ -116,9 +116,9 @@ struct Node : public NodeI<ContextT> {
 
     // Rule of 5.
     ~Node() override                           = default;
-    Node(const Node &)                         = default;
+    Node(Node const &)                         = default;
     Node(Node &&) noexcept                     = default;
-    auto operator=(const Node &) -> Node     & = default;
+    auto operator=(Node const &) -> Node     & = default;
     auto operator=(Node &&) noexcept -> Node & = default;
 
     // Provide the base interface elements for our types.
@@ -134,7 +134,7 @@ struct Node : public NodeI<ContextT> {
     auto draw(Box<ContextT> const &ctx) const -> Box<ContextT> override {
         using vsg::draw;
         Box<ContextT> newCtx = draw(ctx, m_gpuData, m_drawArgs);
-        immer::for_each(m_children, [&](const Box<NodeI<ContextT>> &curNode) {
+        immer::for_each(m_children, [&](Box<NodeI<ContextT>> const &curNode) {
             curNode->draw(newCtx);
         });
         return newCtx;
@@ -164,9 +164,9 @@ struct Node : public NodeI<ContextT> {
 template<typename ContextT>
 struct VirtualNodeI {
     VirtualNodeI()                                                                 = default;
-    VirtualNodeI(const VirtualNodeI<ContextT> &)                                   = default;
+    VirtualNodeI(VirtualNodeI<ContextT> const &)                                   = default;
     VirtualNodeI(VirtualNodeI<ContextT> &&) noexcept                               = default;
-    auto operator=(const VirtualNodeI<ContextT> &) -> VirtualNodeI<ContextT>     & = default;
+    auto operator=(VirtualNodeI<ContextT> const &) -> VirtualNodeI<ContextT>     & = default;
     auto operator=(VirtualNodeI<ContextT> &&) noexcept -> VirtualNodeI<ContextT> & = default;
     virtual ~VirtualNodeI()                                                        = default;
 
@@ -199,9 +199,9 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
 
     // Rule of 5.
     ~VirtualNode() override                                  = default;
-    VirtualNode(const VirtualNode &)                         = default;
+    VirtualNode(VirtualNode const &)                         = default;
     VirtualNode(VirtualNode &&) noexcept                     = default;
-    auto operator=(const VirtualNode &) -> VirtualNode     & = default;
+    auto operator=(VirtualNode const &) -> VirtualNode     & = default;
     auto operator=(VirtualNode &&) noexcept -> VirtualNode & = default;
 
     // Provide the base interface elements for our types.
@@ -242,7 +242,7 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
 
     [[nodiscard]] auto createNode() const -> Box<NodeI<ContextT>> override {
         Vector<Box<NodeI<ContextT>>> childrenNodes;
-        immer::for_each(m_children, [&](const Box<VirtualNodeI<ContextT>> &child) {
+        immer::for_each(m_children, [&](Box<VirtualNodeI<ContextT>> const &child) {
             childrenNodes = childrenNodes.push_back(child->createNode());
         });
         return std::make_shared<vsg::Node<ContextT, DrawArgsT, ChangeMarkerT>>(
