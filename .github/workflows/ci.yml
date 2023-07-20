@@ -21,3 +21,4 @@ jobs:
       JF_CONAN_URL: ${{ secrets.JF_CONAN_URL }}
     with:
       conan_create: true
+      build_docs: false

@@ -11,7 +11,13 @@ Checks: "*,\
   -llvm-include-order,\
   -llvmlibc-*,\
   -modernize-use-nodiscard,\
-  -misc-non-private-member-variables-in-classes"
+  -misc-non-private-member-variables-in-classes,\
+  -readability-uppercase-literal-suffix,\
+  -hicpp-uppercase-literal-suffix,\
+  -readability-magic-numbers,\
+  -cppcoreguidelines-avoid-magic-numbers,\
+  -misc-no-recursion,\
+  -google-build-using-namespace"
 WarningsAsErrors: ''
 CheckOptions:
   - key: 'bugprone-argument-comment.StrictMode'
@@ -45,6 +51,14 @@ CheckOptions:
     value: 'true'
   - key: 'readability-redundant-access-specifiers.CheckFirstDeclaration'
     value: 'true'
+  - key: 'readability-identifier-length.MinimumVariableNameLength'
+    value: 0
+  - key: 'readability-identifier-length.MinimumParameterNameLength'
+    value: 0
+  - key: 'readability-identifier-length.MinimumLoopCounterNameLength'
+    value: 0
+  - key: 'readability-identifier-length.MinimumExceptionNameLength'
+    value: 0
 # These seem to be the most common identifier styles
   - key: 'readability-identifier-naming.AbstractClassCase'
     value: 'CamelCase'
@@ -93,7 +107,7 @@ CheckOptions:
   - key: 'readability-identifier-naming.GlobalFunctionCase'
     value: 'camelBack'
   - key: 'readability-identifier-naming.GlobalPointerCase'
-    value: 'camelback'
+    value: 'camelBack'
   - key: 'readability-identifier-naming.GlobalVariableCase'
     value: 'camelBack'
   - key: 'readability-identifier-naming.InlineNamespaceCase'

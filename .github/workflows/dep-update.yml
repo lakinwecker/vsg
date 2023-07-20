@@ -1,13 +1,13 @@
 name: Update Dependencies
 
 on:
-  schedule:
-    - cron: '0 0 * * 5'
-  workflow_dispatch:
+  pull_request:
+    types: [labeled]
 
 jobs:
   update-deps:
-    uses: BigGeo-GIV/bg-ci/.github/workflows/dependencies.yml@main
+    if: ${{ github.event.label.name == 'update dependencies' }}
+    uses: BigGeo-GIV/bg-ci/.github/workflows/dep-update.yml@main
     secrets:
       GH_ACCESS: ${{ secrets.GH_ACCESS }}
       JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
