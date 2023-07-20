@@ -1,0 +1,14 @@
+name: Check for Dependency Updates
+
+on:
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  check-deps:
+    uses: BigGeo-GIV/bg-ci/.github/workflows/dep-check.yml@main
+    secrets:
+      GH_ACCESS: ${{ secrets.GH_ACCESS }}
+      JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+      JF_CONAN_URL: ${{ secrets.JF_CONAN_URL }}
