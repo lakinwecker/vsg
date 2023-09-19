@@ -65,7 +65,14 @@
       "name": "flags-unix",
       "hidden": true,
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Wshadow -Wcast-align -Wunused -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast"
+        "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Wshadow -Wcast-align -Wunused -Wnull-dereference -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast"
+      }
+    },
+    {
+      "name": "flags-ubuntu",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS":  "-Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Wshadow -Wcast-align -Wunused -Wnull-dereference -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast -Wl,--disable-new-dtags"
       }
     },
     {
@@ -108,7 +115,7 @@
     },
     {
       "name": "ci-coverage",
-      "inherits": ["coverage-unix", "dev-mode", "conan"],
+      "inherits": ["flags-ubuntu", "coverage-unix", "dev-mode", "conan"],
       "cacheVariables": {
         "COVERAGE_HTML_COMMAND": ""
       }
@@ -134,7 +141,7 @@
     },
     {
       "name": "ci-ubuntu",
-      "inherits": ["ci-build", "ci-unix", "dev-mode", "conan"]
+      "inherits": ["flags-ubuntu", "ci-build", "ci-unix", "dev-mode", "conan"]
     },
     {
       "name": "ci-windows",
