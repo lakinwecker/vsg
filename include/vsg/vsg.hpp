@@ -53,8 +53,12 @@ auto draw(
 // This concept determines that a particular T can be drawn
 template<typename ContextT, typename ArgsT, typename GPUDataT>
 concept DrawableNode = requires(Box<ContextT> ctx, ArgsT args, GPUDataT data) {
-    { updateGPU(args) } -> std::convertible_to<GPUDataT>;
-    { draw(ctx, data, args) } -> std::convertible_to<Box<ContextT>>;
+    {
+        updateGPU(args)
+    } -> std::convertible_to<GPUDataT>;
+    {
+        draw(ctx, data, args)
+    } -> std::convertible_to<Box<ContextT>>;
 };
 
 // A sentinel value that means we'll use equality of the draw args to detect change.
@@ -145,13 +149,17 @@ struct Node : public NodeI<ContextT> {
     }
 
     void updateDrawArgs(std::any newArgs) override {
-        if (newArgs.type() != typeid(m_drawArgs)) { return; }
+        if (newArgs.type() != typeid(m_drawArgs)) {
+            return;
+        }
         m_drawArgs = std::any_cast<DrawArgsT>(newArgs);
         m_gpuData  = updateGPU(m_drawArgs);
     }
 
     void updateChangeMarker(std::any newArgs) override {
-        if (newArgs.type() != typeid(m_changeMarker)) { return; }
+        if (newArgs.type() != typeid(m_changeMarker)) {
+            return;
+        }
         m_changeMarker = std::any_cast<ChangeMarkerT>(newArgs);
     }
 };
@@ -218,24 +226,30 @@ struct VirtualNode : public VirtualNodeI<ContextT> {
     }
     [[nodiscard]] auto changeMarkerEquals(NodeI<ContextT> const &other) const -> bool override {
         auto otherChangeMarker = other.markerAsAny();
-        if (otherChangeMarker.type() != typeid(m_changeMarker)) { return false; }
+        if (otherChangeMarker.type() != typeid(m_changeMarker)) {
+            return false;
+        }
         return std::any_cast<ChangeMarkerT>(otherChangeMarker) == m_changeMarker;
     }
 
     [[nodiscard]] auto drawArgsEquals(NodeI<ContextT> const &other) const -> bool override {
-        if constexpr (std::same_as<NoChangeMarkerProvided, ChangeMarkerT> && !std::equality_comparable<DrawArgsT>) {
+        if constexpr (std::same_as<NoChangeMarkerProvided, ChangeMarkerT> && !std::equality_comparable<DrawArgsT>)
+        {
             static_assert(
                 std::equality_comparable<DrawArgsT>,
                 "The Draw Args you provided must be comparable with the == operator or you must "
                 "provide a change marker."
             );
-        } else if constexpr (!std::same_as<NoChangeMarkerProvided, ChangeMarkerT> && !std::equality_comparable<DrawArgsT>) {
+        } else if constexpr (!std::same_as<NoChangeMarkerProvided, ChangeMarkerT> && !std::equality_comparable<DrawArgsT>)
+        {
             // TODO: Consider adding a way for this to warn people that this is happening.
             return false;
         } else {
             // TODO: could save a copy here by using the any only AFTER the types are the same
             auto otherDrawArgs = other.drawArgsAsAny();
-            if (otherDrawArgs.type() != typeid(m_drawArgs)) { return false; }
+            if (otherDrawArgs.type() != typeid(m_drawArgs)) {
+                return false;
+            }
             return std::any_cast<DrawArgsT>(otherDrawArgs) == m_drawArgs;
         }
     }
@@ -255,18 +269,24 @@ template<typename ContextT>
 auto updateGraph(Box<NodeI<ContextT>> graph, Box<VirtualNodeI<ContextT>> const &vGraph)
     -> Box<NodeI<ContextT>> {
     // If the current graph is empty, create it from scratch.
-    if (!graph) { return vGraph->createNode(); }
+    if (!graph) {
+        return vGraph->createNode();
+    }
 
     // Else see if the current node needs to update its GPUData.
     bool needsUpdate = vGraph->hasProvidedChangeMarker() ? !vGraph->changeMarkerEquals(*graph)
                                                          : !vGraph->drawArgsEquals(*graph);
     if (needsUpdate) {
         // If we need to update AND our type changed, just recreate this entire node
-        if (graph->drawArgsType() != vGraph->drawArgsType()) { return vGraph->createNode(); }
+        if (graph->drawArgsType() != vGraph->drawArgsType()) {
+            return vGraph->createNode();
+        }
 
         // Otherwise update in place
         graph->updateDrawArgs(vGraph->drawArgsAsAny());
-        if (vGraph->hasProvidedChangeMarker()) { graph->updateChangeMarker(vGraph->markerAsAny()); }
+        if (vGraph->hasProvidedChangeMarker()) {
+            graph->updateChangeMarker(vGraph->markerAsAny());
+        }
     }
 
     // Regardless of the new/old state of this node, merge the children of the nodes.
@@ -354,7 +374,9 @@ auto draw(
     [[maybe_unused]] Box<VisibilityGPUData<GPUDataT>> const &data,
     [[maybe_unused]] Visibility<DrawArgsT> const &node
 ) -> Box<ContextT> {
-    if (node.visible) { return draw(ctx, data->data, node.drawArgs); }
+    if (node.visible) {
+        return draw(ctx, data->data, node.drawArgs);
+    }
     return ctx;
 }
 

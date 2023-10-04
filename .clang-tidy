@@ -17,7 +17,8 @@ Checks: "*,\
   -readability-magic-numbers,\
   -cppcoreguidelines-avoid-magic-numbers,\
   -misc-no-recursion,\
-  -google-build-using-namespace"
+  -google-build-using-namespace,\
+  -bugprone-easily-swappable-parameters"
 WarningsAsErrors: ''
 CheckOptions:
   - key: 'bugprone-argument-comment.StrictMode'
@@ -115,17 +116,17 @@ CheckOptions:
   - key: 'readability-identifier-naming.LocalConstantCase'
     value: 'camelBack'
   - key: 'readability-identifier-naming.LocalConstantPrefix'
-    value: 'k_'
+    value: ''
   - key: 'readability-identifier-naming.LocalConstantPointerCase'
     value: 'camelBack'
   - key: 'readability-identifier-naming.LocalConstantPointerPrefix'
-    value: 'k_'
+    value: ''
   - key: 'readability-identifier-naming.LocalPointerCase'
     value: 'camelBack'
   - key: 'readability-identifier-naming.LocalVariableCase'
     value: 'camelBack'
   - key: 'readability-identifier-naming.MacroDefinitionCase'
-    value: 'camelBack'
+    value: 'UPPER_CASE'
   - key: 'readability-identifier-naming.MemberCase'
     value: 'camelBack'
   - key: 'readability-identifier-naming.MethodCase'
