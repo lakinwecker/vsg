@@ -72,17 +72,15 @@ ForEachMacros:
   - BOOST_FOREACH
 IncludeBlocks: Regroup
 IncludeCategories:
-  # Standard library headers come before anything else
+  # glad comes before anything else
   - Regex: '^<glad/glad.h>'
     Priority: -2
   - Regex: '^<[a-z_]+>'
-    Priority: -1
-  - Regex: '^<.+\.h(pp)?>'
-    Priority: 1
+    Priority: 3
   - Regex: '^<.*'
     Priority: 2
   - Regex: '.*'
-    Priority: 3
+    Priority: 1
 IncludeIsMainRegex: ''
 IncludeIsMainSourceRegex: ''
 IndentCaseLabels: true

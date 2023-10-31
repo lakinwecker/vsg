@@ -1,0 +1,8 @@
+name: Conan Dev Dependencies
+on:
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: BigGeo-GIV/bg-ci/.github/workflows/conan-dev.yml@main
+    secrets: inherit

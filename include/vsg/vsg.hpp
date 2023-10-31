@@ -15,15 +15,15 @@
 // TODO: Ensure that we can also have 2D (orthographic views)
 //------------------------------------------------------------------------------
 
+#include <immer/algorithm.hpp>
+#include <immer/vector.hpp>
+
 #include <any>
 #include <concepts>
 #include <memory>
 #include <type_traits>
 #include <typeinfo>
 #include <utility>
-
-#include <immer/algorithm.hpp>
-#include <immer/vector.hpp>
 
 namespace vsg {
 
