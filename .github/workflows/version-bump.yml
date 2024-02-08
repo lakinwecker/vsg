@@ -1,0 +1,21 @@
+name: Version Bump
+on:
+  push:
+    branches:
+    - develop
+    paths-ignore:
+    - version.json
+
+  pull_request:
+    types:
+    - opened
+    branches:
+    - main
+
+jobs:
+  version-bump:
+    uses: BigGeo-GIV/bg-ci/.github/workflows/versionbump.yml@main
+    secrets:
+      GH_ACCESS: ${{ secrets.GH_ACCESS }}
+    with:
+      name: vsg

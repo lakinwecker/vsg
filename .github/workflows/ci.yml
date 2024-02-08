@@ -3,12 +3,14 @@ on:
   push:
     branches:
     - main
+    - staging
+    - develop
     paths:
     - version.txt
 
   pull_request:
     branches:
-    - main
+    - develop
 
   workflow_dispatch:
 

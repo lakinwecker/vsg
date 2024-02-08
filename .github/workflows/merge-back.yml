@@ -1,0 +1,15 @@
+name: Merge Back
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  merge-back:
+    uses: BigGeo-GIV/bg-ci/.github/workflows/merge-back.yml@main
+    secrets:
+      GH_ACCESS: ${{ secrets.GH_ACCESS }}
+      JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+      JF_CONAN_URL: ${{ secrets.JF_CONAN_URL }}
+    with:
+      name: vsg
